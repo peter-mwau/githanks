@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   BarChartComponent,
   PieChartComponent,
@@ -11,8 +11,7 @@ import {
   generateContributorRankings,
   AnalyticsData,
 } from "@/lib/analytics";
-import { EnhancedContributor, GitHubRepository } from "@/lib/types";
-import { parseGitHubUrl } from "@/lib/config";
+import { useRepository } from "@/contexts/RepositoryContext";
 import {
   Users,
   MapPin,
@@ -22,87 +21,49 @@ import {
   Building,
   Globe,
   Award,
+  ArrowLeft,
 } from "lucide-react";
+import Link from "next/link";
 
 export default function AnalyticsPage() {
-  const [repositoryUrl, setRepositoryUrl] = useState("");
-  const [repository, setRepository] =
-    useState<Partial<GitHubRepository> | null>(null);
-  const [contributors, setContributors] = useState<EnhancedContributor[]>([]);
+  const {
+    repository,
+    contributors,
+    allContributors,
+    loading,
+    error,
+    fetchAllContributors,
+  } = useRepository();
+
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [rankings, setRankings] = useState<ReturnType<
     typeof generateContributorRankings
   > | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
 
-  const fetchRepositoryData = async () => {
-    if (!repositoryUrl.trim()) return;
+  // Fetch all contributors when component mounts and repository is available
+  useEffect(() => {
+    if (repository && allContributors.length === 0 && !loading) {
+      console.log("Fetching all contributors for analytics...");
+      fetchAllContributors();
+    }
+  }, [repository, allContributors.length, loading, fetchAllContributors]);
 
-    setLoading(true);
-    setError("");
-    setRepository(null);
-    setContributors([]);
-    setAnalytics(null);
-    setRankings(null);
-
-    try {
-      const parsed = parseGitHubUrl(repositoryUrl);
-      if (!parsed) {
-        throw new Error("Invalid GitHub repository URL");
-      }
-
-      const { owner, repo } = parsed;
-
-      // Fetch repository data
-      const repoResponse = await fetch(
-        `/api/github/repository?owner=${encodeURIComponent(
-          owner
-        )}&repo=${encodeURIComponent(repo)}`
+  // Generate analytics when contributors change
+  useEffect(() => {
+    const contributorsToUse =
+      allContributors.length > 0 ? allContributors : contributors;
+    if (contributorsToUse.length > 0 && repository) {
+      console.log(
+        `Generating analytics for ${contributorsToUse.length} contributors`
       );
-      const repoData = await repoResponse.json();
-
-      if (!repoData.success) {
-        throw new Error(repoData.error || "Failed to fetch repository");
-      }
-
-      setRepository(repoData.data);
-
-      // Fetch contributors with more data
-      const contributorsResponse = await fetch(
-        `/api/github/contributors?owner=${encodeURIComponent(
-          owner
-        )}&repo=${encodeURIComponent(repo)}&per_page=100&enhanced=true`
-      );
-      const contributorsData = await contributorsResponse.json();
-
-      if (!contributorsData.success) {
-        throw new Error(
-          contributorsData.error || "Failed to fetch contributors"
-        );
-      }
-
-      const contributorsArray = contributorsData.data;
-      setContributors(contributorsArray);
-
-      // Generate analytics
-      const analyticsData = analyzeContributors(
-        contributorsArray,
-        repoData.data
-      );
+      const analyticsData = analyzeContributors(contributorsToUse, repository);
       setAnalytics(analyticsData);
 
-      // Generate rankings
-      const rankingsData = generateContributorRankings(contributorsArray);
+      const rankingsData = generateContributorRankings(contributorsToUse);
       setRankings(rankingsData);
-    } catch (err) {
-      console.error("Error fetching data:", err);
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [contributors, allContributors, repository]);
 
   const tabs = [
     { id: "overview", label: "Overview", icon: TrendingUp },
@@ -124,31 +85,48 @@ export default function AnalyticsPage() {
           </p>
         </div>
 
-        {/* Repository Input */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-          <div className="flex gap-4">
-            <input
-              type="text"
-              value={repositoryUrl}
-              onChange={(e) => setRepositoryUrl(e.target.value)}
-              placeholder="https://github.com/owner/repository"
-              className="flex-1 px-4 py-3 border border-gray-300 text-gray-900 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            />
-            <button
-              onClick={fetchRepositoryData}
-              disabled={loading}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+        {/* No Repository State */}
+        {!repository && !loading && (
+          <div className="text-center py-16 bg-white rounded-lg shadow-lg">
+            <Globe className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No Repository Selected
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Please go to the home page and enter a GitHub repository URL to
+              analyze contributor data
+            </p>
+            <Link
+              href="/"
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              {loading ? "Analyzing..." : "Analyze Repository"}
-            </button>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Go to Home Page
+            </Link>
           </div>
+        )}
 
-          {error && (
-            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-16 bg-white rounded-lg shadow-lg">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Loading Analytics
+            </h3>
+            <p className="text-gray-600">
+              Analyzing repository data and generating insights...
+            </p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-800">{error}</p>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Repository Info */}
         {repository && (
@@ -164,7 +142,10 @@ export default function AnalyticsPage() {
                 </span>
                 <span className="flex items-center">
                   <Users className="w-4 h-4 mr-1" />
-                  {contributors.length} contributors
+                  {allContributors.length > 0
+                    ? allContributors.length
+                    : contributors.length}{" "}
+                  contributors
                 </span>
               </div>
             </div>
@@ -522,20 +503,6 @@ export default function AnalyticsPage() {
               </div>
             </div>
           </>
-        )}
-
-        {/* Empty State */}
-        {!analytics && !loading && (
-          <div className="text-center py-16 bg-white rounded-lg shadow-lg">
-            <Globe className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No Analytics Data
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Enter a GitHub repository URL above to start analyzing contributor
-              data
-            </p>
-          </div>
         )}
       </div>
     </div>

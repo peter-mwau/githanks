@@ -1,76 +1,27 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { EnhancedContributor, GitHubRepository } from "@/lib/types";
-import { parseGitHubUrl } from "@/lib/config";
+import { EnhancedContributor } from "@/lib/types";
+import { useRepository } from "@/contexts/RepositoryContext";
 
 export default function Home() {
-  const [repositoryUrl, setRepositoryUrl] = useState("");
-  const [repository, setRepository] =
-    useState<Partial<GitHubRepository> | null>(null);
-  const [contributors, setContributors] = useState<EnhancedContributor[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const {
+    repositoryUrl,
+    setRepositoryUrl,
+    repository,
+    contributors,
+    loading,
+    error,
+    fetchRepositoryData,
+  } = useRepository();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!repositoryUrl.trim()) return;
-
-    setLoading(true);
-    setError("");
-    setRepository(null);
-    setContributors([]);
-
-    try {
-      // Parse repository URL using improved parser
-      const parsed = parseGitHubUrl(repositoryUrl);
-      if (!parsed) {
-        throw new Error(
-          "Invalid GitHub repository URL. Please enter a valid GitHub repository URL like: https://github.com/owner/repository"
-        );
-      }
-
-      const { owner, repo } = parsed;
-
-      console.log(`Fetching data for: ${owner}/${repo}`);
-
-      // Fetch repository data
-      const repoResponse = await fetch(
-        `/api/github/repository?owner=${encodeURIComponent(
-          owner
-        )}&repo=${encodeURIComponent(repo)}`
-      );
-      const repoData = await repoResponse.json();
-
-      if (!repoData.success) {
-        throw new Error(repoData.error || "Failed to fetch repository");
-      }
-
-      setRepository(repoData.data);
-
-      // Fetch contributors
-      const contributorsResponse = await fetch(
-        `/api/github/contributors?owner=${encodeURIComponent(
-          owner
-        )}&repo=${encodeURIComponent(repo)}&per_page=20`
-      );
-      const contributorsData = await contributorsResponse.json();
-
-      if (!contributorsData.success) {
-        throw new Error(
-          contributorsData.error || "Failed to fetch contributors"
-        );
-      }
-
-      setContributors(contributorsData.data);
-    } catch (err) {
-      console.error("Error fetching repository data:", err);
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setLoading(false);
-    }
+    await fetchRepositoryData();
   };
+
+  console.log("Contributors:", contributors);
 
   const generateMessage = async (contributor: EnhancedContributor) => {
     try {
@@ -209,9 +160,7 @@ export default function Home() {
         {contributors.length > 0 && (
           <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
-                Contributors
-              </h2>
+              <h2 className="text-2xl font-bold text-gray-900">Contributors</h2>
               <Link
                 href="/analytics"
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
@@ -220,7 +169,7 @@ export default function Home() {
               </Link>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {contributors.map((contributor) => (
+              {contributors.slice(0, 20).map((contributor) => (
                 <div
                   key={contributor.login}
                   className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
