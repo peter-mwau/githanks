@@ -24,6 +24,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function AnalyticsPage() {
   const {
@@ -349,10 +350,15 @@ export default function AnalyticsPage() {
                                 <div className="flex items-center justify-center w-6 h-6 bg-yellow-100 text-yellow-800 rounded-full text-xs font-bold">
                                   {contributor.rank}
                                 </div>
-                                <img
-                                  src={contributor.avatar_url}
+                                <Image
+                                  src={contributor.avatar_url || "/window.svg"}
                                   alt={contributor.login}
-                                  className="w-8 h-8 rounded-full"
+                                  width={48}
+                                  height={48}
+                                  className="w-8 h-8 rounded-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.src = "/window.svg";
+                                  }}
                                 />
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-medium text-gray-900 truncate">
@@ -385,10 +391,15 @@ export default function AnalyticsPage() {
                                 <div className="flex items-center justify-center w-6 h-6 bg-green-100 text-green-800 rounded-full text-xs font-bold">
                                   {contributor.rank}
                                 </div>
-                                <img
-                                  src={contributor.avatar_url}
+                                <Image
+                                  src={contributor.avatar_url || "/window.svg"}
                                   alt={contributor.login}
-                                  className="w-8 h-8 rounded-full"
+                                  width={48}
+                                  height={48}
+                                  className="w-8 h-8 rounded-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.src = "/window.svg";
+                                  }}
                                 />
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-medium text-gray-900 truncate">
@@ -422,10 +433,15 @@ export default function AnalyticsPage() {
                                 <div className="flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-800 rounded-full text-xs font-bold">
                                   {contributor.rank}
                                 </div>
-                                <img
-                                  src={contributor.avatar_url}
+                                <Image
+                                  src={contributor.avatar_url || "/window.svg"}
                                   alt={contributor.login}
-                                  className="w-8 h-8 rounded-full"
+                                  width={48}
+                                  height={48}
+                                  className="w-8 h-8 rounded-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.src = "/window.svg";
+                                  }}
                                 />
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-medium text-gray-900 truncate">

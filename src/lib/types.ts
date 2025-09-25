@@ -98,8 +98,14 @@ export interface APIResponse<T> {
   pagination?: {
     page: number;
     per_page: number;
-    total_count?: number;
+    total_count: number;
     has_next: boolean;
+  };
+  meta?: {
+    warning?: string;
+    total_fetched?: number;
+    rate_limit_hit?: boolean;
+    [key: string]: any; 
   };
 }
 

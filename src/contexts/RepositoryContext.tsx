@@ -87,11 +87,23 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
 
       setRepository(repoData.data);
 
-      // Fetch contributors (more for analytics if needed)
+      // Fetch contributors for home page (unlimited but fast basic mode)
+      console.log("🚀 Fetching contributors for home page...");
+      console.log(
+        "📡 API URL:",
+        `/api/github/contributors?owner=${encodeURIComponent(
+          owner
+        )}&repo=${encodeURIComponent(
+          repo
+        )}&fetch_all=true&enhanced=false&max_pages=0&force_complete=false`
+      );
+
       const contributorsResponse = await fetch(
         `/api/github/contributors?owner=${encodeURIComponent(
           owner
-        )}&repo=${encodeURIComponent(repo)}&per_page=100&enhanced=true`
+        )}&repo=${encodeURIComponent(
+          repo
+        )}&fetch_all=true&enhanced=true&max_pages=0&force_complete=false`
       );
       const contributorsData = await contributorsResponse.json();
 
@@ -100,6 +112,37 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
           contributorsData.error || "Failed to fetch contributors"
         );
       }
+
+      console.log(
+        `✅ Fetched ${contributorsData.data.length.toLocaleString()} contributors for home page`
+      );
+
+      // 🔍 Enhanced debugging info
+      console.log("📊 API Response Meta:", contributorsData.meta);
+      console.log(
+        "📄 Pages fetched:",
+        contributorsData.meta?.pages_fetched || "unknown"
+      );
+      console.log(
+        "🚫 Rate limit hit:",
+        contributorsData.meta?.rate_limit_hit || false
+      );
+      console.log(
+        "📈 Total fetched from API:",
+        contributorsData.meta?.total_fetched || "unknown"
+      );
+
+      // Show warnings if any
+      if (contributorsData.meta?.warning) {
+        console.warn(`⚠️ ${contributorsData.meta.warning}`);
+      }
+
+      // 🔍 Debug the first few and last few contributors
+      console.log(
+        "🥇 First 3 contributors:",
+        contributorsData.data.slice(0, 3)
+      );
+      console.log("🥉 Last 3 contributors:", contributorsData.data.slice(-3));
 
       setContributors(contributorsData.data);
 
@@ -118,6 +161,12 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
   const fetchAllContributors = async () => {
     if (!repositoryUrl.trim()) return;
 
+    // Don't fetch if we already have contributors
+    if (allContributors.length > 0) {
+      console.log("Already have all contributors, skipping fetch");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -129,13 +178,18 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
 
       const { owner, repo } = parsed;
 
-      console.log(`Fetching ALL contributors for: ${owner}/${repo}`);
+      console.log(
+        `🚀 Fetching ALL contributors for analytics: ${owner}/${repo}`
+      );
 
-      // Fetch all contributors with enhanced details
+      // For analytics, get ALL contributors with unlimited pages and force completion
       const response = await fetch(
         `/api/github/contributors?owner=${encodeURIComponent(
           owner
-        )}&repo=${encodeURIComponent(repo)}&fetch_all=true&enhanced=true`
+        )}&repo=${encodeURIComponent(
+          repo
+        )}&fetch_all=true&enhanced=false&max_pages=0&force_complete=true`
+        // ⬆️ CHANGED: max_pages=0 (unlimited), force_complete=true (wait through rate limits)
       );
       const data = await response.json();
 
@@ -143,11 +197,29 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
         throw new Error(data.error || "Failed to fetch all contributors");
       }
 
-      console.log(`Fetched ${data.data.length} total contributors`);
+      console.log(
+        `✅ Fetched ${data.data.length.toLocaleString()} contributors for analytics`
+      );
+      console.log(`📊 Pages fetched: ${data.meta?.pages_fetched || "unknown"}`);
+
+      if (data.meta?.warning) {
+        console.warn(`⚠️ ${data.meta.warning}`);
+      }
+
+      if (data.meta?.rate_limit_hit) {
+        console.log("🕒 Rate limit was hit but we got results anyway!");
+      }
+
       setAllContributors(data.data);
     } catch (err) {
       console.error("Error fetching all contributors:", err);
       setError(err instanceof Error ? err.message : "An error occurred");
+
+      // Fallback: If analytics fetch fails, try to use the basic contributors
+      if (contributors.length > 0) {
+        console.log("📋 Using basic contributors as fallback for analytics");
+        setAllContributors(contributors);
+      }
     } finally {
       setLoading(false);
     }
