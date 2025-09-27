@@ -11,12 +11,14 @@ interface RepositoryContextType {
   allContributors: EnhancedContributor[];
   loading: boolean;
   error: string;
+  enhanced: boolean;
   setRepositoryUrl: (url: string) => void;
   setRepository: (repo: Partial<GitHubRepository> | null) => void;
   setContributors: (contributors: EnhancedContributor[]) => void;
   setAllContributors: (contributors: EnhancedContributor[]) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string) => void;
+  setEnhanced: (enhanced: boolean) => void;
   fetchRepositoryData: (url?: string) => Promise<void>;
   fetchAllContributors: () => Promise<void>;
   clearError: () => void;
@@ -48,6 +50,7 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [enhanced, setEnhanced] = useState(true);
 
   const clearError = () => setError("");
 
@@ -95,7 +98,7 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
           owner
         )}&repo=${encodeURIComponent(
           repo
-        )}&fetch_all=true&enhanced=false&max_pages=0&force_complete=false`
+        )}&fetch_all=true&enhanced=${enhanced}&max_pages=0&force_complete=false`
       );
 
       const contributorsResponse = await fetch(
@@ -103,7 +106,7 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
           owner
         )}&repo=${encodeURIComponent(
           repo
-        )}&fetch_all=true&enhanced=true&max_pages=0&force_complete=false`
+        )}&fetch_all=true&enhanced=${enhanced}&max_pages=0&force_complete=false`
       );
       const contributorsData = await contributorsResponse.json();
 
@@ -114,7 +117,9 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
       }
 
       console.log(
-        `✅ Fetched ${contributorsData.data.length.toLocaleString()} contributors for home page`
+        `✅ Fetched ${contributorsData.data.length.toLocaleString()} contributors (${
+          enhanced ? "Enhanced" : "Basic"
+        } mode)`
       );
 
       // 🔍 Enhanced debugging info
@@ -188,7 +193,7 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
           owner
         )}&repo=${encodeURIComponent(
           repo
-        )}&fetch_all=true&enhanced=false&max_pages=0&force_complete=true`
+        )}&fetch_all=true&enhanced=${enhanced}&max_pages=0&force_complete=true`
         // ⬆️ CHANGED: max_pages=0 (unlimited), force_complete=true (wait through rate limits)
       );
       const data = await response.json();
@@ -232,12 +237,14 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
     allContributors,
     loading,
     error,
+    enhanced,
     setRepositoryUrl,
     setRepository,
     setContributors,
     setAllContributors,
     setLoading,
     setError,
+    setEnhanced,
     fetchRepositoryData,
     fetchAllContributors,
     clearError,

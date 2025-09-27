@@ -142,6 +142,10 @@ const enhancedBatch = await Promise.allSettled(
   batch.map(async (contributor): Promise<EnhancedContributor> => {
     let userDetails = null;
     let lastContribution: string | undefined;
+    let linesAdded = 0;
+        let linesDeleted = 0;
+        const recentCommits: GitHubCommit[] = [];
+
     
     if (contributor.login) {
       try {
@@ -168,22 +172,78 @@ const enhancedBatch = await Promise.allSettled(
           updated_at: user.updated_at,
         };
 
-        // Minimal commit fetching for performance
-        const { data: commits } = await octokit.rest.repos.listCommits({
-          owner,
-          repo,
-          author: contributor.login,
-          per_page: 1, // Just get the most recent
-        });
+         // Fetch recent commits for activity and line counts
+            try {
+              const { data: commits } = await octokit.rest.repos.listCommits({
+                owner,
+                repo,
+                author: contributor.login,
+                per_page: 10, // Get more commits for better estimation
+              });
 
-        if (commits.length > 0) {
-          lastContribution = commits[0].commit.author?.date || commits[0].commit.committer?.date;
+              if (commits.length > 0) {
+                lastContribution = commits[0].commit.author?.date || commits[0].commit.committer?.date;
+              }
+
+              // Build recent commits array
+              recentCommits.push(...commits.slice(0, 5).map(commit => ({
+                sha: commit.sha,
+                commit: {
+                  author: {
+                    name: commit.commit.author?.name || '',
+                    email: commit.commit.author?.email || '',
+                    date: commit.commit.author?.date || '',
+                  },
+                  committer: {
+                    name: commit.commit.committer?.name || '',
+                    email: commit.commit.committer?.email || '',
+                    date: commit.commit.committer?.date || '',
+                  },
+                  message: commit.commit.message,
+                },
+                author: commit.author,
+                committer: commit.committer,
+              } as GitHubCommit)));
+   // Get detailed stats for recent commits (limit to avoid rate limits)
+              for (const commit of commits.slice(0, 3)) { // Reduced to 3 commits
+                try {
+                  const { data: commitDetails } = await octokit.rest.repos.getCommit({
+                    owner,
+                    repo,
+                    ref: commit.sha,
+                  });
+                  
+                  if (commitDetails.stats) {
+                    linesAdded += commitDetails.stats.additions || 0;
+                    linesDeleted += commitDetails.stats.deletions || 0;
+                  }
+                } catch (commitError) {
+                  console.warn(`Failed to fetch commit details for ${commit.sha}:`, commitError);
+                  break; // Stop trying to avoid rate limits
+                }
+              }
+
+              // Estimate total based on contribution ratio
+              if (commits.length < contributor.contributions) {
+                const ratio = contributor.contributions / Math.max(commits.length, 1);
+                linesAdded = Math.round(linesAdded * ratio);
+                linesDeleted = Math.round(linesDeleted * ratio);
+              }
+
+            } catch (commitsError) {
+              console.warn(`Failed to fetch commits for ${contributor.login}:`, commitsError);
+              // Fallback to estimates
+              linesAdded = (contributor.contributions || 0) * 15;
+              linesDeleted = (contributor.contributions || 0) * 3;
+            }
+
+          } catch (userError: any) {
+            console.warn(`Failed to fetch details for ${contributor.login}:`, userError.message);
+            // Use estimates for lines if user fetch failed
+            linesAdded = (contributor.contributions || 0) * 15;
+            linesDeleted = (contributor.contributions || 0) * 3;
+          }
         }
-
-      } catch (userError: any) {
-        console.warn(`Failed to fetch details for ${contributor.login}:`, userError.message);
-      }
-    }
 
     return {
       login: contributor.login || 'unknown',
@@ -227,7 +287,7 @@ const enhancedBatch = await Promise.allSettled(
 
               // Adaptive delay based on rate limiting
               if (i + batchSize < contributors.length) {
-                const delay = remaining < 100 ? 300 : (remaining < 500 ? 150 : 50);
+                const delay = remaining < 100 ? 500 : (remaining < 500 ? 300 : 150);
                 await new Promise(resolve => setTimeout(resolve, delay));
               }
             }

@@ -14,6 +14,8 @@ export default function Home() {
     contributors,
     loading,
     error,
+    enhanced,
+    setEnhanced,
     fetchRepositoryData,
     clearError,
   } = useRepository();
@@ -105,7 +107,88 @@ export default function Home() {
 
         {/* Repository Input Form */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-5 w-5 text-red-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-red-800">{error}</p>
+                </div>
+                <div className="ml-auto pl-3">
+                  <button
+                    onClick={clearError}
+                    className="text-red-400 hover:text-red-600"
+                  >
+                    <span className="sr-only">Dismiss</span>
+                    <svg
+                      className="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Enhanced Mode Toggle */}
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+              <div className="flex-1">
+                <div className="flex items-center space-x-2">
+                  <h3 className="text-sm font-medium text-gray-900">
+                    {enhanced ? "🔍 Enhanced Mode" : "⚡ Basic Mode"}
+                  </h3>
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      enhanced
+                        ? "bg-blue-100 text-blue-800"
+                        : "bg-gray-100 text-gray-800"
+                    }`}
+                  >
+                    {enhanced ? "Detailed" : "Fast"}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  {enhanced
+                    ? "Get full profiles (email, social, bio) - slower but comprehensive"
+                    : "Get basic info only - faster loading, limited details"}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setEnhanced(!enhanced)}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  enhanced ? "bg-blue-600" : "bg-gray-200"
+                }`}
+              >
+                <span className="sr-only">Toggle enhanced mode</span>
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    enhanced ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
             <div>
               <label
                 htmlFor="repository-url"
