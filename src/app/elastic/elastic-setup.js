@@ -12,7 +12,7 @@ const MAPPING_DEFINITION = {
       type: 'text', // Standard text analysis for relevance
       fields: {
         suggest: {
-          type: 'search_as_you_type' // Great for real-time autocompletion
+          type: 'search_as_you_type' // Great for real-time autocompletiona
         }
       }
     },
