@@ -116,7 +116,11 @@ export default function Home() {
                 onClick={clearError}
                 className="text-red-400 hover:text-red-600"
               >
-                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <svg
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
                   <path
                     fillRule="evenodd"
                     d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
@@ -305,7 +309,7 @@ export default function Home() {
                   )}
 
                   {showDetails && contributor.user_details && (
-                    <div className="mb-4 p-3 bg-gray-50 rounded-lg border space-y-2 text-sm">
+                    <div className="mb-4 p-3 bg-gray-50 rounded-lg border space-y-2 text-sm h-[160px] overflow-y-auto">
                       {contributor.user_details.email && (
                         <div className="flex items-center gap-2">
                           <span>📧</span>
@@ -321,6 +325,101 @@ export default function Home() {
                         <p className="text-gray-700 text-xs">
                           {contributor.user_details.bio}
                         </p>
+                      )}
+                      {contributor.user_details.blog && (
+                        <div className="flex items-center gap-2">
+                          <span>🔗</span>
+                          <a
+                            href={
+                              contributor.user_details.blog.startsWith("http")
+                                ? contributor.user_details.blog
+                                : `https://${contributor.user_details.blog}`
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline truncate"
+                          >
+                            {contributor.user_details.blog}
+                          </a>
+                        </div>
+                      )}
+                      {contributor.user_details.twitter_username && (
+                        <div className="flex items-center gap-2">
+                          <span>🐦</span>
+                          <a
+                            href={`https://twitter.com/${contributor.user_details.twitter_username}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline truncate"
+                          >
+                            @{contributor.user_details.twitter_username}
+                          </a>
+                        </div>
+                      )}
+                      {contributor.user_details.company && (
+                        <div className="flex items-center gap-2">
+                          <span>🏢</span>
+                          <span className="text-gray-700 truncate">
+                            {contributor.user_details.company}
+                          </span>
+                        </div>
+                      )}
+                      {contributor.user_details.location && (
+                        <div className="flex items-center gap-2">
+                          <span>📍</span>
+                          <span className="text-gray-700 truncate">
+                            {contributor.user_details.location}
+                          </span>
+                        </div>
+                      )}
+                      {contributor.user_details.html_url && (
+                        <div className="flex items-center gap-2">
+                          <span>👤</span>
+                          <a
+                            href={contributor.user_details.html_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline truncate"
+                          >
+                            View GitHub Profile
+                          </a>
+                        </div>
+                      )}
+                      {contributor.user_details.public_repos && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">
+                            Public Repositories:
+                          </span>
+                          <span className="font-medium text-gray-900">
+                            {contributor.user_details.public_repos.toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                      {contributor.user_details.followers !== undefined && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Followers:</span>
+                          <span className="font-medium text-gray-900">
+                            {contributor.user_details.followers.toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                      {contributor.user_details.following !== undefined && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Following:</span>
+                          <span className="font-medium text-gray-900">
+                            {contributor.user_details.following.toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                      {contributor.user_details.created_at && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Date Joined:</span>
+                          <span className="font-medium text-purple-500">
+                            {new Date(
+                              contributor.user_details.created_at
+                            ).toLocaleDateString()}
+                          </span>
+                        </div>
                       )}
                     </div>
                   )}

@@ -1,6 +1,6 @@
 // A separate setup script (e.g., setup-elastic.js)
-import { client } from './elastic-client.js'; 
-const INDEX_NAME = 'git_contributors_v1';
+import { client } from './elastic-client.js';
+const INDEX_NAME = 'search-jmbj';
 const MAPPING_DEFINITION = {
   properties: {
     // 1. Field for Keyword Search (Exact Match/Filtering)
