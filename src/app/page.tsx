@@ -6,6 +6,7 @@ import Image from "next/image";
 import { EnhancedContributor } from "@/lib/types";
 import { useRepository } from "@/contexts/RepositoryContext";
 import SearchBar from "@/components/SearchBar";
+import BulkMessagingModal from "../components/BulkMessagingModal";
 
 export default function Home() {
   const {
@@ -24,6 +25,7 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const contributorsPerPage = 12;
   const [showDetails, setShowDetails] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
 
   const handleSearch = async () => {
     clearError();
@@ -237,12 +239,20 @@ export default function Home() {
                   {contributors.length.toLocaleString()} contributors
                 </p>
               </div>
-              <Link
-                href="/analytics"
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-              >
-                📊 View Analytics
-              </Link>
+              <div className="flex gap-3">
+                <Link
+                  href="/analytics"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                >
+                  📊 View Analytics
+                </Link>
+                <button
+                  onClick={() => setShowBulkModal(true)}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                >
+                  📨 Bulk Messages
+                </button>
+              </div>
             </div>
 
             {/* Contributors Grid */}
@@ -459,6 +469,15 @@ export default function Home() {
               </div>
             )}
           </div>
+        )}
+
+        {contributors.length > 0 && (
+          <BulkMessagingModal
+            contributors={contributors}
+            repositoryName={repository?.name || ""}
+            isOpen={showBulkModal}
+            onClose={() => setShowBulkModal(false)}
+          />
         )}
 
         {/* Footer */}
