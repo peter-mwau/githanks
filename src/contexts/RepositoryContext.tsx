@@ -24,6 +24,20 @@ interface RepositoryContextType {
   fetchRepositoryData: (url?: string) => Promise<void>;
   fetchAllContributors: () => Promise<void>;
   clearError: () => void;
+  // Elasticsearch functions
+  indexContributorsInElasticsearch: (
+    contributors: EnhancedContributor[]
+  ) => Promise<boolean>;
+  searchContributorsInElasticsearch: (
+    query: string
+  ) => Promise<EnhancedContributor[]>;
+  // Search state
+  searchResults: EnhancedContributor[] | null;
+  setSearchResults: (results: EnhancedContributor[] | null) => void;
+  searchMode: "local" | "elastic";
+  setSearchMode: (mode: "local" | "elastic") => void;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
 }
 
 const RepositoryContext = createContext<RepositoryContextType | undefined>(
@@ -55,7 +69,95 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
   const [enhanced, setEnhanced] = useState(true);
   const [realtimeIndex, setRealtimeIndex] = useState(false);
 
+  // Search state
+  const [searchResults, setSearchResults] = useState<
+    EnhancedContributor[] | null
+  >(null);
+  const [searchMode, setSearchMode] = useState<"local" | "elastic">("local");
+  const [searchQuery, setSearchQuery] = useState("");
+
   const clearError = () => setError("");
+
+  const indexContributorsInElasticsearch = async (
+    contributors: EnhancedContributor[]
+  ) => {
+    try {
+      console.log(
+        `📤 Indexing ${contributors.length} contributors in Elasticsearch...`
+      );
+
+      const response = await fetch("/api/elastic/index", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(contributors),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        console.log(
+          `✅ Successfully indexed ${result.indexedCount} contributors in Elasticsearch`
+        );
+        return true;
+      } else {
+        console.error("❌ Indexing failed:", result.message);
+        if (result.errors) {
+          console.error("Indexing errors:", result.errors);
+        }
+        return false;
+      }
+    } catch (error) {
+      console.error("❌ Indexing error:", error);
+      return false;
+    }
+  };
+
+  const searchContributorsInElasticsearch = async (
+    query: string
+  ): Promise<EnhancedContributor[]> => {
+    if (!query.trim()) {
+      return [];
+    }
+
+    try {
+      console.log(`🔍 Searching Elasticsearch for: "${query}"`);
+
+      const response = await fetch(
+        `/api/elastic/search?q=${encodeURIComponent(query)}`
+      );
+      const data = await response.json();
+
+      if (data.results) {
+        console.log(`✅ Found ${data.results.length} results in Elasticsearch`);
+        return data.results;
+      }
+      return [];
+    } catch (error) {
+      console.error("❌ Elasticsearch search error:", error);
+      return [];
+    }
+  };
+
+  // Initialize Elasticsearch index
+  const initializeElasticsearchIndex = async () => {
+    try {
+      const response = await fetch("/api/elastic/init", {
+        method: "POST",
+      });
+      const result = await response.json();
+      if (result.success) {
+        console.log("✅ Elasticsearch index initialized");
+      } else {
+        console.warn(
+          "⚠️ Elasticsearch initialization warning:",
+          result.message
+        );
+      }
+    } catch (error) {
+      console.error("❌ Elasticsearch initialization error:", error);
+    }
+  };
 
   const fetchRepositoryData = async (url?: string) => {
     const urlToUse = url || repositoryUrl;
@@ -65,6 +167,8 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
     setError("");
     setRepository(null);
     setContributors([]);
+    setSearchResults(null); // Clear previous search results
+    setSearchQuery(""); // Clear search query
 
     try {
       // Parse repository URL using improved parser
@@ -77,7 +181,12 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
 
       const { owner, repo } = parsed;
 
-      console.log(`Fetching data for: ${owner}/${repo}`);
+      console.log(`📡 Fetching data for: ${owner}/${repo}`);
+
+      // Initialize Elasticsearch if realtime indexing is enabled
+      if (realtimeIndex) {
+        await initializeElasticsearchIndex();
+      }
 
       // Fetch repository data
       const repoResponse = await fetch(
@@ -93,7 +202,7 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
 
       setRepository(repoData.data);
 
-      // Fetch contributors for home page (unlimited but fast basic mode)
+      // Fetch contributors for home page
       console.log("🚀 Fetching contributors for home page...");
       console.log(
         "📡 API URL:",
@@ -125,7 +234,7 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
         } mode)`
       );
 
-      // 🔍 Enhanced debugging info
+      // Enhanced debugging info
       console.log("📊 API Response Meta:", contributorsData.meta);
       console.log(
         "📄 Pages fetched:",
@@ -145,7 +254,7 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
         console.warn(`⚠️ ${contributorsData.meta.warning}`);
       }
 
-      // 🔍 Debug the first few and last few contributors
+      // Debug the first few and last few contributors
       console.log(
         "🥇 First 3 contributors:",
         contributorsData.data.slice(0, 3)
@@ -154,12 +263,27 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
 
       setContributors(contributorsData.data);
 
+      // Index contributors in Elasticsearch if realtime indexing is enabled
+      if (realtimeIndex && contributorsData.data.length > 0) {
+        console.log("🔄 Indexing contributors in Elasticsearch...");
+        // Don't await this - let it happen in the background
+        indexContributorsInElasticsearch(contributorsData.data).then(
+          (success) => {
+            if (success) {
+              console.log("🎉 Contributors indexed successfully!");
+            } else {
+              console.warn("⚠️ Contributor indexing completed with errors");
+            }
+          }
+        );
+      }
+
       // Update URL state if different URL was used
       if (url && url !== repositoryUrl) {
         setRepositoryUrl(url);
       }
     } catch (err) {
-      console.error("Error fetching repository data:", err);
+      console.error("❌ Error fetching repository data:", err);
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
@@ -197,7 +321,6 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
         )}&repo=${encodeURIComponent(
           repo
         )}&fetch_all=true&enhanced=${enhanced}&max_pages=0&force_complete=true`
-        // ⬆️ CHANGED: max_pages=0 (unlimited), force_complete=true (wait through rate limits)
       );
       const data = await response.json();
 
@@ -219,8 +342,22 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
       }
 
       setAllContributors(data.data);
+
+      // Index all contributors in Elasticsearch if realtime indexing is enabled
+      if (realtimeIndex && data.data.length > 0) {
+        console.log(
+          "🔄 Indexing all contributors in Elasticsearch for analytics..."
+        );
+        indexContributorsInElasticsearch(data.data).then((success) => {
+          if (success) {
+            console.log(
+              "🎉 All contributors indexed successfully for analytics!"
+            );
+          }
+        });
+      }
     } catch (err) {
-      console.error("Error fetching all contributors:", err);
+      console.error("❌ Error fetching all contributors:", err);
       setError(err instanceof Error ? err.message : "An error occurred");
 
       // Fallback: If analytics fetch fails, try to use the basic contributors
@@ -253,6 +390,16 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
     fetchRepositoryData,
     fetchAllContributors,
     clearError,
+    // Elasticsearch functions
+    indexContributorsInElasticsearch,
+    searchContributorsInElasticsearch,
+    // Search state
+    searchResults,
+    setSearchResults,
+    searchMode,
+    setSearchMode,
+    searchQuery,
+    setSearchQuery,
   };
 
   return (

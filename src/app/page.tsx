@@ -5,7 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { EnhancedContributor } from "@/lib/types";
 import { useRepository } from "@/contexts/RepositoryContext";
-import SearchBar from "@/components/SearchBar";
+import SearchBar from "../components/SearchBar";
+import ElasticSearchBar from "../components/ElasticSearchBar";
 import BulkMessagingModal from "../components/BulkMessagingModal";
 
 export default function Home() {
@@ -22,6 +23,13 @@ export default function Home() {
     setRealtimeIndex,
     fetchRepositoryData,
     clearError,
+    // New search state from context
+    searchResults,
+    setSearchResults,
+    searchMode,
+    setSearchMode,
+    searchQuery,
+    setSearchQuery,
   } = useRepository();
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -32,6 +40,9 @@ export default function Home() {
   const handleSearch = async () => {
     clearError();
     setCurrentPage(1);
+    setSearchResults(null); // Clear previous search results
+    setSearchQuery(""); // Clear search query
+    setSearchMode("local"); // Reset to local search mode
     await fetchRepositoryData();
   };
 
@@ -64,10 +75,64 @@ export default function Home() {
     }
   };
 
-  const totalPages = Math.ceil(contributors.length / contributorsPerPage);
+  // Determine which contributors to display
+  const displayContributors =
+    searchMode === "elastic" && searchResults ? searchResults : contributors;
+
+  // Filter local contributors when in local search mode with query
+  const filteredContributors =
+    searchQuery && searchMode === "local"
+      ? contributors.filter(
+          (contributor) =>
+            contributor.login
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase()) ||
+            contributor.user_details?.name
+              ?.toLowerCase()
+              .includes(searchQuery.toLowerCase()) ||
+            contributor.user_details?.bio
+              ?.toLowerCase()
+              .includes(searchQuery.toLowerCase()) ||
+            contributor.user_details?.location
+              ?.toLowerCase()
+              .includes(searchQuery.toLowerCase()) ||
+            contributor.user_details?.company
+              ?.toLowerCase()
+              .includes(searchQuery.toLowerCase())
+        )
+      : displayContributors;
+
+  const totalPages = Math.ceil(
+    filteredContributors.length / contributorsPerPage
+  );
   const startIndex = (currentPage - 1) * contributorsPerPage;
   const endIndex = startIndex + contributorsPerPage;
-  const currentContributors = contributors.slice(startIndex, endIndex);
+  const currentContributors = filteredContributors.slice(startIndex, endIndex);
+
+  const handleElasticSearchResults = (results: EnhancedContributor[]) => {
+    setSearchResults(results);
+    setSearchMode("elastic");
+    setCurrentPage(1); // Reset to first page when search results change
+  };
+
+  const handleClearSearch = () => {
+    setSearchResults(null);
+    setSearchMode("local");
+    setSearchQuery("");
+    setCurrentPage(1);
+  };
+
+  const handleLocalSearch = (query: string) => {
+    if (!query.trim()) {
+      handleClearSearch();
+      return;
+    }
+
+    setSearchQuery(query);
+    setSearchMode("local");
+    setSearchResults(null);
+    setCurrentPage(1);
+  };
 
   const goToPage = (page: number) => {
     setCurrentPage(page);
@@ -268,18 +333,138 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Search Bar */}
-          <SearchBar
-            value={repositoryUrl}
-            onChange={setRepositoryUrl}
-            onSubmit={handleSearch}
-            placeholder="Enter GitHub repo (e.g., facebook/react)"
-            loading={loading}
-          />
+          {/* Repository Search Bar */}
+          <div className="mb-6">
+            <SearchBar
+              value={repositoryUrl}
+              onChange={setRepositoryUrl}
+              onSubmit={handleSearch}
+              placeholder="Enter GitHub repo (e.g., facebook/react)"
+              loading={loading}
+            />
+          </div>
 
           <p className="mt-3 text-xs text-gray-500">
             💡 Try: facebook/react, microsoft/vscode, or any public GitHub repo
           </p>
+
+          {/* Contributor Search (only show when we have contributors) */}
+          {contributors.length > 0 && (
+            <div className="border-t pt-6 mt-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Search Contributors
+                </h3>
+                <div className="flex items-center gap-4">
+                  <span
+                    className={`text-sm px-2 py-1 rounded-full ${
+                      realtimeIndex
+                        ? "bg-green-100 text-green-800"
+                        : "bg-blue-100 text-blue-800"
+                    }`}
+                  >
+                    {realtimeIndex ? "🔍 Elasticsearch" : "⚡ Local Search"}
+                  </span>
+                  {searchMode === "elastic" && searchResults && (
+                    <button
+                      onClick={handleClearSearch}
+                      className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      Show All Contributors
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {realtimeIndex ? (
+                <ElasticSearchBar
+                  onSearchResults={handleElasticSearchResults}
+                  onSearchStart={() => setCurrentPage(1)}
+                  onClearSearch={handleClearSearch}
+                  placeholder="Search indexed contributors by name, username, bio, location..."
+                  loading={loading}
+                  disabled={loading}
+                />
+              ) : (
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === "Enter") {
+                          handleLocalSearch(searchQuery);
+                        }
+                      }}
+                      placeholder="Search contributors by name, username, bio, location..."
+                      className="w-full px-4 py-3 pl-10 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg
+                        className="h-4 w-4 text-gray-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                      </svg>
+                    </div>
+                    {searchQuery && (
+                      <button
+                        onClick={handleClearSearch}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleLocalSearch(searchQuery)}
+                    disabled={!searchQuery.trim()}
+                    className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium whitespace-nowrap"
+                  >
+                    Search
+                  </button>
+                </div>
+              )}
+
+              {/* Search Stats */}
+              {(searchQuery || searchResults) && (
+                <div className="mt-3 text-sm text-gray-500">
+                  {searchMode === "elastic" ? (
+                    <>
+                      Found {searchResults?.length || 0} results in
+                      Elasticsearch
+                      {searchQuery && ` for "${searchQuery}"`}
+                    </>
+                  ) : (
+                    <>
+                      Found {filteredContributors.length} results locally
+                      {searchQuery && ` for "${searchQuery}"`}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Repository Information */}
@@ -320,7 +505,7 @@ export default function Home() {
         )}
 
         {/* Contributors List */}
-        {contributors.length > 0 && (
+        {filteredContributors.length > 0 && (
           <div
             id="contributors-section"
             className="bg-white rounded-lg shadow-lg p-6"
@@ -328,12 +513,20 @@ export default function Home() {
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">
-                  Contributors
+                  {searchMode === "elastic" && searchResults
+                    ? "Search Results"
+                    : "Contributors"}
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
                   Showing {startIndex + 1}-
-                  {Math.min(endIndex, contributors.length)} of{" "}
-                  {contributors.length.toLocaleString()} contributors
+                  {Math.min(endIndex, filteredContributors.length)} of{" "}
+                  {filteredContributors.length.toLocaleString()} contributors
+                  {searchMode === "elastic" &&
+                    searchResults &&
+                    " (from search)"}
+                  {searchMode === "local" &&
+                    searchQuery &&
+                    " (from local search)"}
                 </p>
               </div>
               <div className="flex gap-3">
@@ -417,6 +610,7 @@ export default function Home() {
 
                   {showDetails && contributor.user_details && (
                     <div className="mb-4 p-3 bg-gray-50 rounded-lg border space-y-2 text-sm h-[160px] overflow-y-auto">
+                      {/* ... existing details code ... */}
                       {contributor.user_details.email && (
                         <div className="flex items-center gap-2">
                           <span>📧</span>
@@ -565,6 +759,27 @@ export default function Home() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Show message when no contributors found after search */}
+        {contributors.length > 0 && filteredContributors.length === 0 && (
+          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+            <div className="text-gray-400 text-6xl mb-4">🔍</div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              No contributors found
+            </h3>
+            <p className="text-gray-600 mb-4">
+              {searchMode === "elastic"
+                ? "No contributors match your search in Elasticsearch."
+                : "No contributors match your local search."}
+            </p>
+            <button
+              onClick={handleClearSearch}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Show All Contributors
+            </button>
           </div>
         )}
 

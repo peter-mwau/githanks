@@ -18,6 +18,26 @@ export async function GET(request) {
       );
     }
 
+    // console.log(`🔍 Searching Elasticsearch for: "${query}"`);
+
+    // Check if index exists first
+    try {
+      const indexExists = await client.indices.exists({ index: INDEX_NAME });
+      if (!indexExists) {
+        console.log(`❌ Index "${INDEX_NAME}" does not exist`);
+        return NextResponse.json({
+          results: [],
+          message: "Index not found. No contributors have been indexed yet."
+        }, { status: 200 });
+      }
+    } catch (indexError) {
+      console.error('❌ Error checking index existence:', indexError);
+      return NextResponse.json({
+        results: [],
+        message: "Error connecting to Elasticsearch"
+      }, { status: 200 });
+    }
+
     // --- Core Hybrid Search Query ---
     const searchResponse = await client.search({
       index: INDEX_NAME,
@@ -42,6 +62,24 @@ export async function GET(request) {
                   },
                 },
               },
+              // 3. Match on location
+              {
+                match: {
+                  'user_details.location': {
+                    query: query,
+                    fuzziness: 'AUTO',
+                  },
+                },
+              },
+              // 4. Match on company
+              {
+                match: {
+                  'user_details.company': {
+                    query: query,
+                    fuzziness: 'AUTO',
+                  },
+                },
+              },
             ],
             minimum_should_match: 1,
           },
@@ -49,14 +87,47 @@ export async function GET(request) {
       },
     });
 
-    // Extract the source documents
-    const results = searchResponse.body.hits.hits.map(hit => hit._source);
+    console.log('📊 Raw Elasticsearch response:', JSON.stringify(searchResponse, null, 2));
 
-    return NextResponse.json({ results }, { status: 200 });
+    // Safely extract the source documents
+    let results = [];
+
+    // Check different possible response structures
+    if (searchResponse.body && searchResponse.body.hits && searchResponse.body.hits.hits) {
+      results = searchResponse.body.hits.hits.map(hit => hit._source);
+    } else if (searchResponse.hits && searchResponse.hits.hits) {
+      results = searchResponse.hits.hits.map(hit => hit._source);
+    } else if (searchResponse.body) {
+      // Try to parse the body directly
+      const body = searchResponse.body;
+      if (body.hits && body.hits.hits) {
+        results = body.hits.hits.map(hit => hit._source);
+      }
+    }
+
+    console.log(`✅ Found ${results.length} results for query: "${query}"`);
+
+    return NextResponse.json({
+      results,
+      total: results.length,
+      query
+    }, { status: 200 });
+
   } catch (error) {
-    console.error('Elasticsearch Search Error:', error);
+    console.error('❌ Elasticsearch Search Error:', error);
+
+    // More detailed error information
+    if (error.meta && error.meta.body) {
+      console.error('🔍 Elasticsearch error details:', error.meta.body);
+    }
+
     return NextResponse.json(
-      { success: false, message: 'Internal server error during search.' },
+      {
+        success: false,
+        message: 'Internal server error during search.',
+        error: error.message,
+        results: []
+      },
       { status: 500 }
     );
   }
