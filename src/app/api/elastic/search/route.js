@@ -3,7 +3,7 @@
 import { client } from '../../../elastic/elastic-client';
 import { NextResponse } from 'next/server';
 
-const INDEX_NAME = 'git_contributors_v1';
+const INDEX_NAME = 'search-jmbj';
 
 // The GET handler is used for fetching data (searching)
 export async function GET(request) {
@@ -51,7 +51,7 @@ export async function GET(request) {
 
     // Extract the source documents
     const results = searchResponse.body.hits.hits.map(hit => hit._source);
-    
+
     return NextResponse.json({ results }, { status: 200 });
   } catch (error) {
     console.error('Elasticsearch Search Error:', error);

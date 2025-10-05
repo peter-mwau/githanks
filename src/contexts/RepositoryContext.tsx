@@ -19,6 +19,8 @@ interface RepositoryContextType {
   setLoading: (loading: boolean) => void;
   setError: (error: string) => void;
   setEnhanced: (enhanced: boolean) => void;
+  realtimeIndex: boolean;
+  setRealtimeIndex: (value: boolean) => void;
   fetchRepositoryData: (url?: string) => Promise<void>;
   fetchAllContributors: () => Promise<void>;
   clearError: () => void;
@@ -51,6 +53,7 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [enhanced, setEnhanced] = useState(true);
+  const [realtimeIndex, setRealtimeIndex] = useState(false);
 
   const clearError = () => setError("");
 
@@ -98,7 +101,7 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
           owner
         )}&repo=${encodeURIComponent(
           repo
-        )}&fetch_all=true&enhanced=${enhanced}&max_pages=0&force_complete=false`
+        )}&fetch_all=true&enhanced=${enhanced}&realtime_index=${realtimeIndex}&max_pages=0&force_complete=false`
       );
 
       const contributorsResponse = await fetch(
@@ -106,7 +109,7 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
           owner
         )}&repo=${encodeURIComponent(
           repo
-        )}&fetch_all=true&enhanced=${enhanced}&max_pages=0&force_complete=false`
+        )}&fetch_all=true&enhanced=${enhanced}&realtime_index=${realtimeIndex}&max_pages=0&force_complete=false`
       );
       const contributorsData = await contributorsResponse.json();
 
@@ -245,6 +248,8 @@ export function RepositoryProvider({ children }: RepositoryProviderProps) {
     setLoading,
     setError,
     setEnhanced,
+    realtimeIndex,
+    setRealtimeIndex,
     fetchRepositoryData,
     fetchAllContributors,
     clearError,

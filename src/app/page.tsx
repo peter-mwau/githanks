@@ -18,6 +18,8 @@ export default function Home() {
     error,
     enhanced,
     setEnhanced,
+    realtimeIndex,
+    setRealtimeIndex,
     fetchRepositoryData,
     clearError,
   } = useRepository();
@@ -133,42 +135,137 @@ export default function Home() {
             </div>
           )}
 
-          {/* Enhanced Mode Toggle */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border mb-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-medium text-gray-900">
-                  {enhanced ? "🔍 Enhanced Mode" : "⚡ Basic Mode"}
-                </h3>
-                <span
-                  className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    enhanced
-                      ? "bg-blue-100 text-blue-800"
-                      : "bg-gray-100 text-gray-800"
+          {/* Enhanced Mode & Indexing - Card Layout */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {/* Enhanced Mode Card */}
+            <div className="bg-white rounded-lg border p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`p-2 rounded-lg ${
+                      enhanced ? "bg-blue-100" : "bg-gray-100"
+                    }`}
+                  >
+                    {enhanced ? (
+                      <span className="text-blue-600 text-sm">🔍</span>
+                    ) : (
+                      <span className="text-gray-600 text-sm">⚡</span>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900">
+                      {enhanced ? "Enhanced Mode" : "Basic Mode"}
+                    </h3>
+                    <p className="text-xs text-gray-500">
+                      {enhanced
+                        ? "Full profiles with detailed info"
+                        : "Fast loading, basic info"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEnhanced(!enhanced)}
+                  className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    enhanced ? "bg-blue-600" : "bg-gray-200"
                   }`}
                 >
-                  {enhanced ? "Detailed" : "Fast"}
-                </span>
+                  <span
+                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      enhanced ? "translate-x-4" : "translate-x-0"
+                    }`}
+                  />
+                </button>
               </div>
-              <p className="mt-1 text-xs text-gray-500">
-                {enhanced
-                  ? "Get full profiles (email, social, bio) - slower but comprehensive"
-                  : "Get basic info only - faster loading, limited details"}
-              </p>
+              <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100">
+                <div className="flex items-center gap-1">
+                  <div
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      enhanced ? "bg-yellow-400" : "bg-green-400"
+                    }`}
+                  ></div>
+                  <span className="text-xs text-gray-600">
+                    {enhanced ? "Slower" : "Faster"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      enhanced ? "bg-green-400" : "bg-gray-300"
+                    }`}
+                  ></div>
+                  <span className="text-xs text-gray-600">
+                    {enhanced ? "Rich data" : "Basic"}
+                  </span>
+                </div>
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setEnhanced(!enhanced)}
-              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                enhanced ? "bg-blue-600" : "bg-gray-200"
-              }`}
-            >
-              <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                  enhanced ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </button>
+
+            {/* Realtime Indexing Card */}
+            <div className="bg-white rounded-lg border p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`p-2 rounded-lg ${
+                      realtimeIndex ? "bg-green-100" : "bg-gray-100"
+                    }`}
+                  >
+                    <span
+                      className={`text-sm ${
+                        realtimeIndex ? "text-green-600" : "text-gray-600"
+                      }`}
+                    >
+                      📊
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900">
+                      Realtime Indexing
+                    </h3>
+                    <p className="text-xs text-gray-500">
+                      {realtimeIndex
+                        ? "Search optimized"
+                        : "Enable for fast search"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setRealtimeIndex(!realtimeIndex)}
+                  className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                    realtimeIndex ? "bg-green-600" : "bg-gray-200"
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 ease-in-out ${
+                      realtimeIndex ? "translate-x-4" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+              <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100">
+                <div className="flex items-center gap-1">
+                  <div
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      realtimeIndex ? "bg-blue-400" : "bg-gray-300"
+                    }`}
+                  ></div>
+                  <span className="text-xs text-gray-600">
+                    {realtimeIndex ? "Fast search" : "Standard"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      realtimeIndex ? "bg-purple-400" : "bg-gray-300"
+                    }`}
+                  ></div>
+                  <span className="text-xs text-gray-600">
+                    {realtimeIndex ? "Elasticsearch" : "Basic"}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Search Bar */}
