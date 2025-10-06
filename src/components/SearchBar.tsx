@@ -32,7 +32,7 @@ export default function SearchBar({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="flex-1 px-4 py-2 border border-gray-300 text-gray-900 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+          className="flex-1 px-4 py-2 border border-gray-300 text-gray-200 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
           disabled={loading}
         />
         <button
