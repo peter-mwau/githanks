@@ -23,7 +23,7 @@ export default function ElasticSearchBar({
   const [query, setQuery] = useState("");
   const [localLoading, setLocalLoading] = useState(false);
   const [lastSearchedQuery, setLastSearchedQuery] = useState("");
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Debounced search effect
   useEffect(() => {

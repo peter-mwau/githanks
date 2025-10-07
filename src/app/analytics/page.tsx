@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import type { Dispatch, SetStateAction } from "react";
+import type { RankedContributor } from "@/lib/types";
 
 interface AnalyticsPageProps {
   setCurrentPage?: Dispatch<SetStateAction<string>>;
@@ -367,7 +368,7 @@ export default function AnalyticsPage({ setCurrentPage }: AnalyticsPageProps) {
                         <div className="space-y-4">
                           {rankings.byContributions
                             .slice(0, 10)
-                            .map((contributor: any) => (
+                            .map((contributor: RankedContributor) => (
                               <div
                                 key={contributor.login}
                                 className="flex items-center space-x-4 p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50 hover:shadow-md transition-all duration-200"
@@ -408,7 +409,7 @@ export default function AnalyticsPage({ setCurrentPage }: AnalyticsPageProps) {
                         <div className="space-y-4">
                           {rankings.byLinesAdded
                             .slice(0, 10)
-                            .map((contributor: any) => (
+                            .map((contributor: RankedContributor) => (
                               <div
                                 key={contributor.login}
                                 className="flex items-center space-x-4 p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50 hover:shadow-md transition-all duration-200"
@@ -450,7 +451,7 @@ export default function AnalyticsPage({ setCurrentPage }: AnalyticsPageProps) {
                         <div className="space-y-4">
                           {rankings.byRecentActivity
                             .slice(0, 10)
-                            .map((contributor: any) => (
+                            .map((contributor: RankedContributor) => (
                               <div
                                 key={contributor.login}
                                 className="flex items-center space-x-4 p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50 hover:shadow-md transition-all duration-200"

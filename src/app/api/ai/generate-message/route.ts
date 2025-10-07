@@ -351,6 +351,8 @@ async function sendDirectMessage(
   // Implementation depends on your email service (SendGrid, AWS SES, etc.)
   // This is a placeholder implementation
   console.log(`Sending message to ${contributor.user_details?.email}:`, message);
+  console.log("Repository:", repositoryName);
+  
   
   // Example with SendGrid (you'll need to install @sendgrid/mail)
   /*
@@ -500,6 +502,8 @@ function generateThankYouMessage(
 
 function generateTweetMessage(contributor: EnhancedContributor, repositoryName: string): string {
   const name = contributor.user_details?.name || contributor.login;
+  console.log("Generating tweet message for:", name);
+  
   const twitterHandle = contributor.user_details?.twitter_username 
     ? `@${contributor.user_details.twitter_username}` 
     : `@${contributor.login}`;
