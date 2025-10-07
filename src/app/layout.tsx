@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { RepositoryProvider } from "@/contexts/RepositoryContext";
+import ClientProviders from "@/components/ClientProviders";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,8 +19,6 @@ export const metadata: Metadata = {
     "AI-Powered Appreciation for Open-Source Contributors. Discover, analyze, and thank your GitHub repository contributors with personalized messages.",
 };
 
-// const darkMode = false;
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -31,7 +29,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <RepositoryProvider>{children}</RepositoryProvider>
+        <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
   );

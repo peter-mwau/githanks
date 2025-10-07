@@ -5,9 +5,9 @@ import { useRef, useEffect } from "react";
 // Extend Window interface to include Vanta and THREE
 declare global {
   interface Window {
-    THREE: any;
+    THREE: unknown;
     VANTA: {
-      GLOBE?: (options: any) => {
+      GLOBE?: (options: unknown) => {
         destroy: () => void;
       };
     };

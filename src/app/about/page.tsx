@@ -7,14 +7,9 @@ import {
   BarChart3,
   MessageSquare,
 } from "lucide-react";
-import type { Dispatch, SetStateAction } from "react";
 import Image from "next/image";
 
-export default function AboutPage({
-  setCurrentPage,
-}: {
-  setCurrentPage?: Dispatch<SetStateAction<string>>;
-}) {
+export default function AboutPage() {
   return (
     <div className="min-h-screen bg-transparent pt-24 pb-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">

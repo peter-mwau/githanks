@@ -30,14 +30,14 @@ export function validateEnvironment(): { isValid: boolean; missingVars: string[]
     'GITHUB_TOKEN',
   ];
 
-  const optionalVars = [
-    'GOOGLE_CLOUD_PROJECT_ID',
-    'GOOGLE_CLOUD_KEY_FILE',
-    'ELASTICSEARCH_CLOUD_ID',
-    'ELASTICSEARCH_API_KEY',
-    'TWITTER_API_KEY',
-    'TWITTER_API_SECRET',
-  ];
+  // const optionalVars = [
+  //   'GOOGLE_CLOUD_PROJECT_ID',
+  //   'GOOGLE_CLOUD_KEY_FILE',
+  //   'ELASTICSEARCH_CLOUD_ID',
+  //   'ELASTICSEARCH_API_KEY',
+  //   'TWITTER_API_KEY',
+  //   'TWITTER_API_SECRET',
+  // ];
 
   const missingVars: string[] = [];
   
@@ -121,9 +121,10 @@ export function createRateLimitHeaders(remaining: number, resetTime: number) {
 }
 
 // Error response utilities
-export function createErrorResponse(message: string, status: number = 400) {
+export function createErrorResponse(message: string, _status: number = 400) {
   return {
     success: false,
+    status: _status,
     error: message,
     timestamp: new Date().toISOString(),
   };

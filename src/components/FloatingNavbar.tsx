@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+// import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 
 interface FloatingNavbarProps {
@@ -13,9 +12,8 @@ interface FloatingNavbarProps {
 export default function FloatingNavbar({
   currentPage,
   setCurrentPage,
-  darkMode,
 }: FloatingNavbarProps) {
-  const pathname = usePathname();
+  // const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -36,7 +34,7 @@ export default function FloatingNavbar({
   const handleNavigation = (page: string, href: string) => {
     setCurrentPage(page);
     // If you're using Next.js navigation, you might want to use router.push instead
-    // router.push(href);
+    console.log(`Navigate to ${href}`);
   };
 
   return (
