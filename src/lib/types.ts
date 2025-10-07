@@ -109,6 +109,10 @@ export interface APIResponse<T> {
   };
 }
 
+export interface RankedContributor extends EnhancedContributor {
+  rank: number;
+}
+
 // GraphQL Types for GitHub API
 export interface GitHubGraphQLResponse<T> {
   data: T;

@@ -18,7 +18,7 @@ class GitHubAPI {
         owner,
         repo,
       });
-      return response.data as GitHubRepository;
+      return response.data as unknown as GitHubRepository;
     } catch (error) {
       console.error('Error fetching repository:', error);
       throw new Error(`Failed to fetch repository: ${owner}/${repo}`);

@@ -60,26 +60,14 @@ export async function POST() {
       message: 'Index created successfully',
       index: INDEX_NAME 
     });
-    } catch (error) {
-    console.error('❌ Index initialization error:', error);
-
-    // Safely narrow unknown error to access properties without TypeScript errors
-    const err = error as any;
-
-    if (err?.meta?.body) {
-      console.error('🔍 Elasticsearch error details:', err.meta.body);
-    }
-
-    const message =
-      error instanceof Error ? error.message : err?.message ?? String(error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Initialization failed',
-        message,
-      },
-      { status: 500 }
-    );
-  }
+    } catch (error: unknown) {
+  console.error('❌ Index initialization error:', error);
+  const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+  
+  return NextResponse.json({ 
+    success: false, 
+    error: 'Initialization failed',
+    message: errorMessage 
+  }, { status: 500 });
+}
 }

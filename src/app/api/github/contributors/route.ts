@@ -235,14 +235,17 @@ const enhancedBatch = await Promise.allSettled(
               // Fallback to estimates
               linesAdded = (contributor.contributions || 0) * 15;
               linesDeleted = (contributor.contributions || 0) * 3;
+              console.log(`Using estimates for lines added/deleted due to commit fetch failure. ${linesAdded} ${linesDeleted}`);
+              
             }
 
-          } catch (userError: any) {
-            console.warn(`Failed to fetch details for ${contributor.login}:`, userError.message);
-            // Use estimates for lines if user fetch failed
-            linesAdded = (contributor.contributions || 0) * 15;
-            linesDeleted = (contributor.contributions || 0) * 3;
-          }
+          }  catch (error: unknown) {
+  const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+  console.error('Error:', errorMessage);
+  linesAdded = (contributor.contributions || 0) * 15;
+              linesDeleted = (contributor.contributions || 0) * 3;
+              console.log(`Using estimates for lines added/deleted due to commit fetch failure. ${linesAdded} ${linesDeleted}`);
+}
         }
 
     return {
@@ -337,49 +340,68 @@ const enhancedBatch = await Promise.allSettled(
             }
           }
 
-        } catch (apiError: any) {
-          console.error(`Error fetching page ${currentPage}:`, apiError.message);
-          
-          if (apiError.status === 403 || apiError.status === 429) {
-            // Rate limit hit
-            rateLimitHit = true;
-            console.warn('Hit rate limit!');
-            
-            if (forceComplete) {
-              // Try to wait and retry
-              const resetTime = parseInt(apiError.response?.headers['x-ratelimit-reset'] || '0') * 1000;
-              const now = Date.now();
-              const waitTime = Math.min(Math.max(resetTime - now, 60000), 300000); // 1-5 minutes
-              
-              console.log(`Force complete enabled. Waiting ${Math.round(waitTime/1000)}s before retry...`);
-              await new Promise(resolve => setTimeout(resolve, waitTime));
-              
-              retryCount++;
-              if (retryCount < maxRetries) {
-                console.log(`Retrying... (${retryCount}/${maxRetries})`);
-                continue; // Don't increment page, retry same page
-              }
-            }
-            
-            console.warn('Rate limit exceeded, returning partial results');
-            hasMore = false;
-          } else if (apiError.status === 404) {
-            console.error('Repository not found or not accessible');
-            return NextResponse.json<APIResponse<null>>({
-              success: false,
-              error: 'Repository not found or not accessible',
-            }, { status: 404 });
-          } else {
-            // Other error, retry once
-            if (retryCount < maxRetries) {
-              retryCount++;
-              console.log(`API error, retrying... (${retryCount}/${maxRetries})`);
-              await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s before retry
-              continue;
-            }
-            throw apiError;
-          }
+        } catch (apiError: unknown) {
+  console.error(`Error fetching page ${currentPage}:`, apiError instanceof Error ? apiError.message : 'Unknown error');
+  
+  // Type guard to check if it's an error with status
+  const isErrorWithStatus = (error: unknown): error is { status: number; response?: { headers?: { [key: string]: string } } } => {
+    return typeof error === 'object' && error !== null && 'status' in error;
+  };
+
+  if (isErrorWithStatus(apiError)) {
+    if (apiError.status === 403 || apiError.status === 429) {
+      // Rate limit hit
+      rateLimitHit = true;
+      console.warn('Hit rate limit!');
+      
+      if (forceComplete) {
+        // Try to wait and retry
+        const resetHeader = apiError.response?.headers?.['x-ratelimit-reset'];
+        const resetTime = resetHeader ? parseInt(resetHeader) * 1000 : 0;
+        const now = Date.now();
+        const waitTime = Math.min(Math.max(resetTime - now, 60000), 300000); // 1-5 minutes
+        
+        console.log(`Force complete enabled. Waiting ${Math.round(waitTime/1000)}s before retry...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        
+        retryCount++;
+        if (retryCount < maxRetries) {
+          console.log(`Retrying... (${retryCount}/${maxRetries})`);
+          continue; // Don't increment page, retry same page
         }
+      }
+      
+      console.warn('Rate limit exceeded, returning partial results');
+      hasMore = false;
+    } else if (apiError.status === 404) {
+      console.error('Repository not found or not accessible');
+      return NextResponse.json<APIResponse<null>>({
+        success: false,
+        error: 'Repository not found or not accessible',
+      }, { status: 404 });
+    } else {
+      // Other error, retry once
+      if (retryCount < maxRetries) {
+        retryCount++;
+        console.log(`API error, retrying... (${retryCount}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s before retry
+        continue;
+      }
+      throw apiError;
+    }
+  } else {
+    // Handle non-status errors
+    console.error('Unknown API error:', apiError);
+    if (retryCount < maxRetries) {
+      retryCount++;
+      console.log(`Unknown error, retrying... (${retryCount}/${maxRetries})`);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      continue;
+    }
+    throw apiError;
+  }
+        }
+
       }
 
       pagesFetched = currentPage - 1;

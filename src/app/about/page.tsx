@@ -1,4 +1,5 @@
-import Link from "next/link";
+"use client";
+
 import {
   Heart,
   Github,
@@ -8,8 +9,29 @@ import {
   MessageSquare,
 } from "lucide-react";
 import Image from "next/image";
+import type { Dispatch, SetStateAction } from "react";
+interface AboutPageProps {
+  setCurrentPage?: Dispatch<SetStateAction<string>>;
+}
 
-export default function AboutPage() {
+export default function AboutPage({ setCurrentPage }: AboutPageProps) {
+  const handleGoHome = () => {
+    if (setCurrentPage) {
+      setCurrentPage("home");
+    } else {
+      // Fallback: use Next.js navigation if setCurrentPage is not available
+      window.location.href = "/";
+    }
+  };
+
+  const handleGoAnalytics = () => {
+    if (setCurrentPage) {
+      setCurrentPage("analytics");
+    } else {
+      // Fallback: use Next.js navigation if setCurrentPage is not available
+      window.location.href = "/";
+    }
+  };
   return (
     <div className="min-h-screen bg-transparent pt-24 pb-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
@@ -652,18 +674,18 @@ export default function AboutPage() {
             Start building stronger open-source communities today.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/"
+            <button
+              onClick={() => handleGoHome()}
               className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               Get Started
-            </Link>
-            <Link
-              href="/analytics"
+            </button>
+            <button
+              onClick={() => handleGoAnalytics}
               className="bg-white/50 dark:bg-gray-800/50 text-indigo-600 dark:text-indigo-400 border-2 border-indigo-600 dark:border-indigo-400 px-8 py-3 rounded-xl font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               View Analytics
-            </Link>
+            </button>
           </div>
         </div>
 
