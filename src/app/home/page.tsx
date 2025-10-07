@@ -41,6 +41,10 @@ export default function Home({ setCurrentPage }: HomePageProps) {
   const contributorsPerPage = 12;
   const [showDetails, setShowDetails] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
+  const [aiGeneratedMessage, setAIGeneratedMessage] = useState<string | null>(
+    null
+  );
+  const [showAIMessagePopup, setShowAIMessagePopup] = useState(false);
 
   const handleSearch = async () => {
     clearError();
@@ -68,7 +72,10 @@ export default function Home({ setCurrentPage }: HomePageProps) {
 
       const data = await response.json();
       if (data.success) {
-        alert(data.data.message);
+        // alert(data.data.message);
+        setAIGeneratedMessage(data.data.message);
+        setTimeout(() => setShowAIMessagePopup(true), 300); // Slight delay for better UX
+        // console.log("AI Message:", data);
       } else {
         alert("Failed to generate message: " + data.error);
       }
@@ -786,6 +793,42 @@ export default function Home({ setCurrentPage }: HomePageProps) {
                 </div>
               ))}
             </div>
+
+            {showAIMessagePopup && aiGeneratedMessage && (
+              <div
+                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                style={{ background: "rgba(0, 0, 0, 0.5)" }}
+              >
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-lg w-full mx-4">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                    AI-Generated Thank You Message
+                  </h3>
+                  <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap mb-6">
+                    {aiGeneratedMessage}
+                  </p>
+                  <div className="flex flex-row gap-4">
+                    <button
+                      onClick={() => {
+                        setShowAIMessagePopup(false);
+                        setAIGeneratedMessage(null);
+                      }}
+                      className="bg-green-600 hover:bg-green-700 items-start text-white px-6 py-3 rounded-xl transition-all duration-200 text-sm font-medium shadow-lg hover:shadow-xl"
+                    >
+                      Post Tweet
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowAIMessagePopup(false);
+                        setAIGeneratedMessage(null);
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 items-end text-white px-6 py-3 rounded-xl transition-all duration-200 text-sm font-medium shadow-lg hover:shadow-xl"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Pagination */}
             {totalPages > 1 && (

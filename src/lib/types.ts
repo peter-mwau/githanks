@@ -105,7 +105,7 @@ export interface APIResponse<T> {
     warning?: string;
     total_fetched?: number;
     rate_limit_hit?: boolean;
-    [key: string]: any; 
+    [key: string]: unknown; 
   };
 }
 
